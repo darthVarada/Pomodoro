@@ -2,6 +2,7 @@ import time
 import threading
 import tkinter as tk
 from tkinter import ttk, PhotoImage
+import simpleaudio as sa
 
 class PomodoroTimer:
 
@@ -57,6 +58,11 @@ class PomodoroTimer:
 
         self.root.mainloop()
 
+    def play_buzzer(self):
+        wave_obj = sa.WaveObject.from_wave_file("buzzer.wav")
+        play_obj = wave_obj.play()
+        play_obj.wait_done()
+
     def start_timer_threading(self):
         if not self.running:
             t = threading.Thread(target=self.start_timer)
@@ -85,6 +91,7 @@ class PomodoroTimer:
 
                 else:
                     self.tabs.select(1)
+                self.play_buzzer()
                 self.start_timer()
 
         elif timer_id == 2:
@@ -98,6 +105,7 @@ class PomodoroTimer:
             
             if not self.stopped or self.skipped:
                 self.tabs.select(0)
+                self.play_buzzer()
                 self.start_timer()
         elif timer_id == 3:
             full_seconds = 60 * 15
@@ -109,6 +117,7 @@ class PomodoroTimer:
                 full_seconds -= 1
             if not self.stopped or self.skipped:
                 self.tabs.select(0)
+                self.play_buzzer()
                 self.start_timer()
         else:
             print("invalid timer id")
