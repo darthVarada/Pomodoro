@@ -3,6 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk, PhotoImage
 import simpleaudio as sa
+from tkinter import messagebox
 
 class PomodoroTimer:
 
@@ -11,6 +12,7 @@ class PomodoroTimer:
         self.root.geometry("600x300")
         self.root.title("Pomodoro Timer")
         self.root.tk.call('wm', 'iconphoto', self.root._w, PhotoImage(file="tomato.png"))
+
 
         self.s = ttk.Style()
         self.s.configure("TNotebook.Tab", font=("ubuntu", 16))
@@ -42,20 +44,25 @@ class PomodoroTimer:
         self.start_start_button = ttk.Button(self.grind_layout, text="start", command=self.start_timer_threading)
         self.start_start_button.grid(row=0, column=0)
 
+        self.pause_button = ttk.Button(self.grind_layout, text="Pause", command=self.pause_timer)
+        self.pause_button.grid(row=0, column=1)
+
         self.skip_button = ttk.Button(self.grind_layout, text="skip", command=self.skip_clock)
-        self.skip_button.grid(row=0, column=1)
+        self.skip_button.grid(row=0, column=2)
 
         self.reset_button = ttk.Button(self.grind_layout, text="Reset", command=self.reset_clock)
-        self.reset_button.grid(row=0, column=2)
+        self.reset_button.grid(row=0, column=3)
 
         self.pomodoro_counter_label = ttk.Label(self.grind_layout, text="Pomodoros: 0", font=("Ubuntu", 16))
-        self.pomodoro_counter_label.grid(row=1, column=0, columnspan=3, pady=10)
+        self.pomodoro_counter_label.grid(row=1, column=0, columnspan=4, pady=10)
 
         self.pomodoros = 0
         self.skipped = False
         self.stopped = False
         self.running = False
+        self.paused = False
 
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.mainloop()
 
     def play_buzzer(self):
@@ -69,80 +76,116 @@ class PomodoroTimer:
             t.start()
             self.running = True
 
+    def pause_timer(self):
+        if self.running:
+            self.paused = not self.paused
+            if self.paused:
+                self.set_timer_colors("orange")  # Define a cor do temporizador como laranja (pausa)
+            else:
+                self.set_timer_colors("black")  # Define a cor do temporizador como preto (retomada)
+
     def start_timer(self):
-        
         self.stopped = False
         self.skipped = False
         timer_id = self.tabs.index(self.tabs.select()) + 1
 
         if timer_id == 1:
+            self.set_timer_colors("green")  # Define a cor do temporizador como verde
             full_seconds = 60 * 25
             while full_seconds > 0 and not self.stopped:
-                minutes, seconds = divmod(full_seconds, 60)
-                self.pomodoro_timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
-                self.root.update()
-                time.sleep(1)
-                full_seconds -= 1
+                if not self.paused:  # Verifica se o temporizador não está pausado
+                    minutes, seconds = divmod(full_seconds, 60)
+                    self.pomodoro_timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
+                    self.root.update()
+                    time.sleep(1)
+                    full_seconds -= 1
+                else:
+                    time.sleep(1)  # Aguarda 1 segundo enquanto estiver pausado
+
             if not self.stopped or self.skipped:
                 self.pomodoros += 1
                 self.pomodoro_counter_label.config(text=f"Pomodoros: {self.pomodoros}")
                 if self.pomodoros % 4 == 0:
                     self.tabs.select(2)
-
                 else:
                     self.tabs.select(1)
                 self.play_buzzer()
+                self.set_timer_colors("black")  # Define a cor do temporizador como preto
                 self.start_timer()
 
         elif timer_id == 2:
+            self.set_timer_colors("green")  # Define a cor do temporizador como verde
             full_seconds = 60 * 5
             while full_seconds > 0 and not self.stopped:
-                minutes, seconds = divmod(full_seconds, 60)
-                self.short_break_timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
-                self.root.update()
-                time.sleep(1)
-                full_seconds -= 1
-            
+                if not self.paused:  # Verifica se o temporizador não está pausado
+                    minutes, seconds = divmod(full_seconds, 60)
+                    self.short_break_timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
+                    self.root.update()
+                    time.sleep(1)
+                    full_seconds -= 1
+
             if not self.stopped or self.skipped:
                 self.tabs.select(0)
                 self.play_buzzer()
+                self.set_timer_colors("black")  # Define a cor do temporizador como preto
                 self.start_timer()
+
         elif timer_id == 3:
+            self.set_timer_colors("green")  # Define a cor do temporizador como verde
             full_seconds = 60 * 15
             while full_seconds > 0 and not self.stopped:
-                minutes, seconds = divmod(full_seconds, 60)
-                self.long_break_timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
-                self.root.update()
-                time.sleep(1)
-                full_seconds -= 1
+                if not self.paused:  # Verifica se o temporizador não está pausado
+                    minutes, seconds = divmod(full_seconds, 60)
+                    self.long_break_timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
+                    self.root.update()
+                    time.sleep(1)
+                    full_seconds -= 1
+
             if not self.stopped or self.skipped:
                 self.tabs.select(0)
                 self.play_buzzer()
+                self.set_timer_colors("black")  # Define a cor do temporizador como preto
                 self.start_timer()
-        else:
-            print("invalid timer id")
 
+    def set_timer_colors(self, color):
+        # Define a cor dos temporizadores
+        timer_colors = {
+            "green": "green",
+            "black": "black",
+            "orange": "orange"
+        }
+        self.pomodoro_timer_label.config(foreground=timer_colors[color])
+        self.short_break_timer_label.config(foreground=timer_colors[color])
+        self.long_break_timer_label.config(foreground=timer_colors[color])
 
     def reset_clock(self):
         self.stopped = True
         self.skipped = False
         self.pomodoros = 0
-        self.pomodoro_timer_label.config(text=f"25:00")
-        self.short_break_timer_label.config(text=f"05:00")
-        self.long_break_timer_label.config(text=f"15:00")
+        self.pomodoro_timer_label.config(text="25:00")
+        self.short_break_timer_label.config(text="05:00")
+        self.long_break_timer_label.config(text="15:00")
         self.pomodoro_counter_label.config(text="Pomodoros: 0")
         self.running = False
+        self.paused = False
+        self.set_timer_colors("black")  # Define a cor do temporizador como preto
 
     def skip_clock(self):
         current_tab = self.tabs.index(self.tabs.select())
         if current_tab == 0:
-            self.pomodoro_timer_label.config(text=f"25:00")
+            self.pomodoro_timer_label.config(text="25:00")
         elif current_tab == 1:
-            self.short_break_timer_label.config(text=f"05:00")
+            self.short_break_timer_label.config(text="05:00")
         elif current_tab == 2:
-            self.long_break_timer_label.config(text=f"15:00")
+            self.long_break_timer_label.config(text="15:00")
 
         self.stopped = True
         self.skipped = True
-            
-PomodoroTimer()
+
+    def close(self):
+        # Função para fechar o aplicativo
+        if messagebox.askokcancel("Fechar", "Deseja realmente fechar o aplicativo?"):
+            self.root.destroy()
+
+if __name__ == "__main__":
+    app = PomodoroTimer()
